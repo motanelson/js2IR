@@ -1,2 +1,1 @@
-# js2IR
-java script into IR macro
+compiles into java script 
