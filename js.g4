@@ -1,62 +1,229 @@
 grammar js;
 
-// Ponto de entrada do programa
-programa : instrucao* EOF ;
+// ==========================
+// PROGRAMA
+// ==========================
+programa : statement* EOF ;
 
-// Instruções possíveis
-instrucao : declaracaoVariavel
-          | declaracaoFuncao
-          | expressao ';'
-          | bloco
-          ;
+// ==========================
+// STATEMENTS
+// ==========================
+statement
+    : block
+    | variableStatement
+    | functionDeclaration
+    | classDeclaration
+    | ifStatement
+    | iterationStatement
+    | returnStatement
+    | breakStatement
+    | continueStatement
+    | expressionStatement
+    | importStatement
+    | exportStatement
+    | ';'
+    ;
 
-// Declaração de variável (let, const ou var)
-declaracaoVariavel : ('let' | 'const' | 'var') ID ('=' expressao)? ';' ;
+// --------------------------
+block : '{' statement* '}' ;
 
-// Declaração de função
-declaracaoFuncao : 'function' ID '(' parametroLista? ')' bloco ;
+// ==========================
+// DECLARAÇÕES
+// ==========================
+variableStatement
+    : ('let' | 'const' | 'var') variableDeclaration (',' variableDeclaration)* ';'
+    ;
 
-// Lista de parâmetros de uma função
-parametroLista : ID (',' ID)* ;
+variableDeclaration
+    : ID ('=' expression)?
+    ;
 
-// Bloco de código
-bloco : '{' instrucao* '}' ;
+functionDeclaration
+    : 'function' ID '(' parameterList? ')' block
+    ;
 
-// Expressão
-expressao : atribuicao ;
+classDeclaration
+    : 'class' ID ('extends' ID)? '{' classElement* '}'
+    ;
 
-// Atribuição
-atribuicao : ID '=' expressao
-           | condicao
-           ;
+classElement
+    : methodDefinition
+    ;
 
-// Condição e operadores lógicos básicos
-condicao : comparacao (('&&' | '||') comparacao)* ;
+methodDefinition
+    : ID '(' parameterList? ')' block
+    ;
 
-// Comparação
-comparacao : soma (('==' | '!=' | '<' | '>' | '<=' | '>=') soma)* ;
+// ==========================
+// IMPORT / EXPORT
+// ==========================
+importStatement
+    : 'import' ID 'from' STRING ';'
+    ;
 
-// Operações aritméticas
-soma : produto (('+' | '-') produto)* ;
-produto : operando (('*' | '/') operando)* ;
+exportStatement
+    : 'export' (functionDeclaration | variableStatement | classDeclaration)
+    ;
 
-// Operando
-operando : ID
-         | NUMBER
-         | chamadaFuncao
-         | '(' expressao ')'
-         ;
+// ==========================
+// CONTROLO DE FLUXO
+// ==========================
+ifStatement
+    : 'if' '(' expression ')' statement ('else' statement)?
+    ;
 
-// Chamada de função
-chamadaFuncao : ID '(' argumentoLista? ')' ;
+iterationStatement
+    : 'while' '(' expression ')' statement
+    | 'for' '(' (variableStatement | expression? ';') expression? ';' expression? ')' statement
+    ;
 
-// Lista de argumentos de função
-argumentoLista : expressao (',' expressao)* ;
+returnStatement
+    : 'return' expression? ';'
+    ;
 
-// Tokens básicos
-tipo : 'number' | 'string' | 'boolean' ;
+breakStatement
+    : 'break' ';'
+    ;
 
-ID : [a-zA-Z_][a-zA-Z_0-9]* ;
-NUMBER : [0-9]+ ;
+continueStatement
+    : 'continue' ';'
+    ;
+
+// ==========================
+// EXPRESSÕES
+// ==========================
+expressionStatement
+    : expression ';'
+    ;
+
+expression
+    : assignmentExpression
+    ;
+
+assignmentExpression
+    : leftHandSideExpression '=' assignmentExpression
+    | logicalOrExpression
+    ;
+
+// --------------------------
+logicalOrExpression
+    : logicalAndExpression ( '||' logicalAndExpression )*
+    ;
+
+logicalAndExpression
+    : equalityExpression ( '&&' equalityExpression )*
+    ;
+
+equalityExpression
+    : relationalExpression ( ('==' | '!=' | '===' | '!==') relationalExpression )*
+    ;
+
+relationalExpression
+    : additiveExpression ( ('<' | '>' | '<=' | '>=') additiveExpression )*
+    ;
+
+additiveExpression
+    : multiplicativeExpression (('+' | '-') multiplicativeExpression)*
+    ;
+
+multiplicativeExpression
+    : unaryExpression (('*' | '/' | '%') unaryExpression)*
+    ;
+
+unaryExpression
+    : ('!' | '-' | '+') unaryExpression
+    | postfixExpression
+    ;
+
+postfixExpression
+    : leftHandSideExpression ('++' | '--')?
+    ;
+
+// ==========================
+// MEMBER / CALL
+// ==========================
+leftHandSideExpression
+    : primaryExpression ( memberAccess | callExpression )*
+    ;
+
+memberAccess
+    : '.' ID
+    | '[' expression ']'
+    ;
+
+callExpression
+    : '(' argumentList? ')'
+    ;
+
+// ==========================
+// PRIMÁRIOS
+// ==========================
+primaryExpression
+    : ID
+    | literal
+    | arrayLiteral
+    | objectLiteral
+    | '(' expression ')'
+    | arrowFunction
+    ;
+
+arrowFunction
+    : '(' parameterList? ')' '=>' (expression | block)
+    | ID '=>' (expression | block)
+    ;
+
+// ==========================
+// LITERAIS
+// ==========================
+literal
+    : NUMBER
+    | STRING
+    | BOOLEAN
+    | 'null'
+    | 'undefined'
+    ;
+
+// Arrays
+arrayLiteral
+    : '[' (expression (',' expression)*)? ']'
+    ;
+
+// Objetos
+objectLiteral
+    : '{' (property (',' property)*)? '}'
+    ;
+
+property
+    : ID ':' expression
+    ;
+
+// ==========================
+// ARGUMENTOS / PARAMETROS
+// ==========================
+argumentList
+    : assignmentExpression (',' assignmentExpression)*
+    ;
+
+parameterList
+    : ID (',' ID)*
+    ;
+
+// ==========================
+// TOKENS
+// ==========================
+BOOLEAN : 'true' | 'false' ;
+
+NUMBER
+    : [0-9]+ ('.' [0-9]+)?
+    ;
+
+STRING
+    : '"' (~["\\] | '\\' .)* '"'
+    | '\'' (~['\\] | '\\' .)* '\''
+    ;
+
+ID : [a-zA-Z_$][a-zA-Z0-9_$]* ;
+
 WS : [ \t\r\n]+ -> skip ;
-
+COMMENT : '//' ~[\r\n]* -> skip ;
+MULTILINE_COMMENT : '/*' .*? '*/' -> skip ;
